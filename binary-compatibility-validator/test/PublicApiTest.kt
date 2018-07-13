@@ -2,7 +2,7 @@
  * Copyright 2016-2018 JetBrains s.r.o. Use of this source code is governed by the Apache 2.0 license.
  */
 
-package kotlinx.coroutines.experimental.tools
+package kotlinx.coroutines.tools
 
 import org.junit.*
 import org.junit.rules.*
@@ -32,8 +32,8 @@ class PublicApiTest {
     @Test
     fun kotlinxCoroutinesCore() {
         snapshotAPIAndCompare("core/kotlinx-coroutines-core", nonPublicPackages = listOf(
-            "kotlinx.coroutines.experimental.internal",
-            "kotlinx.coroutines.experimental.scheduling"))
+            "kotlinx.coroutines.internal",
+            "kotlinx.coroutines.scheduling"))
     }
 
     @Test
