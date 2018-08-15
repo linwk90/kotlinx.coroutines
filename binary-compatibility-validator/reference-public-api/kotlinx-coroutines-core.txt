@@ -82,14 +82,12 @@ public final class kotlinx/coroutines/experimental/CancelledContinuation : kotli
 	public fun <init> (Lkotlin/coroutines/experimental/Continuation;Ljava/lang/Throwable;)V
 }
 
-public abstract class kotlinx/coroutines/experimental/CloseableCoroutineDispatcher : kotlinx/coroutines/experimental/CoroutineDispatcher, java/io/Closeable {
-	public fun <init> ()V
-}
-
-public final class kotlinx/coroutines/experimental/CommonPool : kotlinx/coroutines/experimental/CoroutineDispatcher {
+public final class kotlinx/coroutines/experimental/CommonPool : kotlinx/coroutines/experimental/ExecutorCoroutineDispatcher {
 	public static final field DEFAULT_PARALLELISM_PROPERTY_NAME Ljava/lang/String;
 	public static final field INSTANCE Lkotlinx/coroutines/experimental/CommonPool;
+	public fun close ()V
 	public fun dispatch (Lkotlin/coroutines/experimental/CoroutineContext;Ljava/lang/Runnable;)V
+	public fun getExecutor ()Ljava/util/concurrent/Executor;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -294,7 +292,12 @@ public final class kotlinx/coroutines/experimental/EventLoopKt {
 	public static synthetic fun EventLoop$default (Ljava/lang/Thread;Lkotlinx/coroutines/experimental/Job;ILjava/lang/Object;)Lkotlinx/coroutines/experimental/CoroutineDispatcher;
 }
 
-public abstract class kotlinx/coroutines/experimental/ExecutorCoroutineDispatcherBase : kotlinx/coroutines/experimental/CloseableCoroutineDispatcher, kotlinx/coroutines/experimental/Delay {
+public abstract class kotlinx/coroutines/experimental/ExecutorCoroutineDispatcher : kotlinx/coroutines/experimental/CoroutineDispatcher, java/io/Closeable {
+	public fun <init> ()V
+	public abstract fun getExecutor ()Ljava/util/concurrent/Executor;
+}
+
+public abstract class kotlinx/coroutines/experimental/ExecutorCoroutineDispatcherBase : kotlinx/coroutines/experimental/ExecutorCoroutineDispatcher, kotlinx/coroutines/experimental/Delay {
 	public fun <init> ()V
 	public fun close ()V
 	public fun delay (JLjava/util/concurrent/TimeUnit;Lkotlin/coroutines/experimental/Continuation;)Ljava/lang/Object;
@@ -308,8 +311,7 @@ public abstract class kotlinx/coroutines/experimental/ExecutorCoroutineDispatche
 
 public final class kotlinx/coroutines/experimental/ExecutorsKt {
 	public static final fun asCoroutineDispatcher (Ljava/util/concurrent/Executor;)Lkotlinx/coroutines/experimental/CoroutineDispatcher;
-	public static final fun asCoroutineDispatcher (Ljava/util/concurrent/ExecutorService;)Lkotlinx/coroutines/experimental/CloseableCoroutineDispatcher;
-	public static final fun toCoroutineDispatcher (Ljava/util/concurrent/Executor;)Lkotlinx/coroutines/experimental/CoroutineDispatcher;
+	public static final fun asCoroutineDispatcher (Ljava/util/concurrent/ExecutorService;)Lkotlinx/coroutines/experimental/ExecutorCoroutineDispatcher;
 }
 
 public abstract interface class kotlinx/coroutines/experimental/Job : kotlin/coroutines/experimental/CoroutineContext$Element {
@@ -427,18 +429,15 @@ public final class kotlinx/coroutines/experimental/ScheduledKt {
 	public static synthetic fun withTimeoutOrNull$default (JLjava/util/concurrent/TimeUnit;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/experimental/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
 }
 
-public final class kotlinx/coroutines/experimental/ThreadPoolDispatcher : kotlinx/coroutines/experimental/ExecutorCoroutineDispatcherBase, java/io/Closeable {
+public final class kotlinx/coroutines/experimental/ThreadPoolDispatcher : kotlinx/coroutines/experimental/ExecutorCoroutineDispatcherBase {
 	public fun close ()V
+	public fun getExecutor ()Ljava/util/concurrent/Executor;
 	public fun toString ()Ljava/lang/String;
 }
 
 public final class kotlinx/coroutines/experimental/ThreadPoolDispatcherKt {
 	public static final fun newFixedThreadPoolContext (ILjava/lang/String;)Lkotlinx/coroutines/experimental/ThreadPoolDispatcher;
-	public static final fun newFixedThreadPoolContext (ILjava/lang/String;Lkotlinx/coroutines/experimental/Job;)Lkotlin/coroutines/experimental/CoroutineContext;
-	public static synthetic fun newFixedThreadPoolContext$default (ILjava/lang/String;Lkotlinx/coroutines/experimental/Job;ILjava/lang/Object;)Lkotlin/coroutines/experimental/CoroutineContext;
 	public static final fun newSingleThreadContext (Ljava/lang/String;)Lkotlinx/coroutines/experimental/ThreadPoolDispatcher;
-	public static final fun newSingleThreadContext (Ljava/lang/String;Lkotlinx/coroutines/experimental/Job;)Lkotlin/coroutines/experimental/CoroutineContext;
-	public static synthetic fun newSingleThreadContext$default (Ljava/lang/String;Lkotlinx/coroutines/experimental/Job;ILjava/lang/Object;)Lkotlin/coroutines/experimental/CoroutineContext;
 }
 
 public final class kotlinx/coroutines/experimental/TimeoutCancellationException : java/util/concurrent/CancellationException {

@@ -33,25 +33,13 @@ public fun ExecutorService.asCoroutineDispatcher(): ExecutorCoroutineDispatcher 
 
 /**
  * Converts an instance of [Executor] to an implementation of [CoroutineDispatcher].
- * @suppress **Deprecated**: Renamed to [asCoroutineDispatcher].
- */
-@Deprecated("Renamed to `asCoroutineDispatcher`",
-    replaceWith = ReplaceWith("asCoroutineDispatcher()"))
-public fun Executor.toCoroutineDispatcher(): CoroutineDispatcher =
-    ExecutorCoroutineDispatcherImpl(this)
-
-/**
- * Converts an instance of [Executor] to an implementation of [CoroutineDispatcher].
  */
 public fun Executor.asCoroutineDispatcher(): CoroutineDispatcher =
     ExecutorCoroutineDispatcherImpl(this)
 
 private class ExecutorCoroutineDispatcherImpl(override val executor: Executor) : ExecutorCoroutineDispatcherBase()
 
-/**
- * @suppress **This is unstable API and it is subject to change.**
- */
-public abstract class ExecutorCoroutineDispatcherBase : ExecutorCoroutineDispatcher(), Delay {
+abstract class ExecutorCoroutineDispatcherBase : ExecutorCoroutineDispatcher(), Delay {
 
     override fun dispatch(context: CoroutineContext, block: Runnable) =
         try { executor.execute(timeSource.trackTask(block)) }
@@ -76,10 +64,10 @@ public abstract class ExecutorCoroutineDispatcherBase : ExecutorCoroutineDispatc
             try { (executor as? ScheduledExecutorService)
                 ?.schedule(block, time, unit) }
             catch (e: RejectedExecutionException) { null }
-        if (timeout != null)
-            return DisposableFutureHandle(timeout)
+        return if (timeout != null)
+            DisposableFutureHandle(timeout)
         else
-            return DefaultExecutor.invokeOnTimeout(time, unit, block)
+            DefaultExecutor.invokeOnTimeout(time, unit, block)
     }
 
     override fun close() {
@@ -104,7 +92,7 @@ private class ResumeUndispatchedRunnable(
  * An implementation of [DisposableHandle] that cancels the specified future on dispose.
  * @suppress **This is unstable API and it is subject to change.**
  */
-public class DisposableFutureHandle(private val future: Future<*>) : DisposableHandle {
+class DisposableFutureHandle(private val future: Future<*>) : DisposableHandle {
     override fun dispose() {
         future.cancel(false)
     }

@@ -4,11 +4,8 @@
 
 package kotlinx.coroutines.experimental
 
-import java.io.Closeable
-import java.util.concurrent.Executors
-import java.util.concurrent.ScheduledExecutorService
+import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.coroutines.experimental.CoroutineContext
 
 /**
  * Creates a new coroutine execution context using a single thread with built-in [yield] and [delay] support.
@@ -18,14 +15,6 @@ import kotlin.coroutines.experimental.CoroutineContext
  * @param name the base name of the created thread.
  */
 fun newSingleThreadContext(name: String): ThreadPoolDispatcher =
-    newFixedThreadPoolContext(1, name)
-
-/**
- * @suppress **Deprecated**: Parent job is no longer supported.
- */
-@Deprecated(message = "Parent job is no longer supported, `close` the resulting ThreadPoolDispatcher to release resources",
-    level = DeprecationLevel.WARNING, replaceWith = ReplaceWith("newSingleThreadContext(name)"))
-fun newSingleThreadContext(name: String, parent: Job? = null): CoroutineContext =
     newFixedThreadPoolContext(1, name)
 
 /**
@@ -41,14 +30,6 @@ fun newFixedThreadPoolContext(nThreads: Int, name: String): ThreadPoolDispatcher
     return ThreadPoolDispatcher(nThreads, name)
 }
 
-/**
- * @suppress **Deprecated**: Parent job is no longer supported.
- */
-@Deprecated(message = "Parent job is no longer supported, `close` the resulting ThreadPoolDispatcher to release resources",
-    level = DeprecationLevel.WARNING, replaceWith = ReplaceWith("newFixedThreadPoolContext(nThreads, name)"))
-fun newFixedThreadPoolContext(nThreads: Int, name: String, parent: Job? = null): CoroutineContext =
-    newFixedThreadPoolContext(nThreads, name)
-
 internal class PoolThread(
     @JvmField val dispatcher: ThreadPoolDispatcher, // for debugging & tests
     target: Runnable, name: String
@@ -63,10 +44,10 @@ internal class PoolThread(
 public class ThreadPoolDispatcher internal constructor(
     private val nThreads: Int,
     private val name: String
-) : ExecutorCoroutineDispatcherBase(), Closeable {
+) : ExecutorCoroutineDispatcherBase() {
     private val threadNo = AtomicInteger()
 
-    override val executor: ScheduledExecutorService = Executors.newScheduledThreadPool(nThreads) { target ->
+    override val executor: Executor = Executors.newScheduledThreadPool(nThreads) { target ->
         PoolThread(this, target, if (nThreads == 1) name else name + "-" + threadNo.incrementAndGet())
     }
 
@@ -74,7 +55,7 @@ public class ThreadPoolDispatcher internal constructor(
      * Closes this dispatcher -- shuts down all threads in this pool and releases resources.
      */
     public override fun close() {
-        executor.shutdown()
+        (executor as ExecutorService).shutdown()
     }
 
     override fun toString(): String = "ThreadPoolDispatcher[$nThreads, $name]"

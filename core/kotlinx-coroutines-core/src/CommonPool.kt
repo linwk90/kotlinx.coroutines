@@ -136,5 +136,5 @@ object CommonPool : ExecutorCoroutineDispatcher() {
 
     override fun toString(): String = "CommonPool"
 
-    override fun close() = error("Close cannot be invoked on CommonPool")
+    override fun close(): Unit = error("Close cannot be invoked on CommonPool")
 }
