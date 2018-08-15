@@ -10,16 +10,26 @@ import java.util.concurrent.*
 import kotlin.coroutines.experimental.*
 
 /**
- * [CoroutineDispatcher] that implements [Closeable]
+ * [CoroutineDispatcher] that has underlying [Executor] for dispatching tasks.
+ * Instances of [ExecutorCoroutineDispatcher] should be closed by the owner of the dispatcher.
+ *
+ * This class is generally used as a bridge between coroutine-based API and
+ * asynchronous API which requires instance of the [Executor]
  */
-abstract class CloseableCoroutineDispatcher: CoroutineDispatcher(), Closeable
+public abstract class ExecutorCoroutineDispatcher: CoroutineDispatcher(), Closeable {
+
+    /**
+     * Underlying executor of current [CoroutineDispatcher].
+     */
+    abstract val executor: Executor
+}
 
 /**
- * Converts an instance of [ExecutorService] to an implementation of [CloseableCoroutineDispatcher].
+ * Converts an instance of [ExecutorService] to an implementation of [ExecutorCoroutineDispatcher].
  */
-public fun ExecutorService.asCoroutineDispatcher(): CloseableCoroutineDispatcher =
+public fun ExecutorService.asCoroutineDispatcher(): ExecutorCoroutineDispatcher =
     // we know that an implementation of Executor.asCoroutineDispatcher actually returns a closeable one
-    (this as Executor).asCoroutineDispatcher() as CloseableCoroutineDispatcher
+    (this as Executor).asCoroutineDispatcher() as ExecutorCoroutineDispatcher
 
 /**
  * Converts an instance of [Executor] to an implementation of [CoroutineDispatcher].
@@ -28,25 +38,21 @@ public fun ExecutorService.asCoroutineDispatcher(): CloseableCoroutineDispatcher
 @Deprecated("Renamed to `asCoroutineDispatcher`",
     replaceWith = ReplaceWith("asCoroutineDispatcher()"))
 public fun Executor.toCoroutineDispatcher(): CoroutineDispatcher =
-    ExecutorCoroutineDispatcher(this)
+    ExecutorCoroutineDispatcherImpl(this)
 
 /**
  * Converts an instance of [Executor] to an implementation of [CoroutineDispatcher].
  */
 public fun Executor.asCoroutineDispatcher(): CoroutineDispatcher =
-    ExecutorCoroutineDispatcher(this)
+    ExecutorCoroutineDispatcherImpl(this)
 
-private class ExecutorCoroutineDispatcher(override val executor: Executor) : ExecutorCoroutineDispatcherBase()
+private class ExecutorCoroutineDispatcherImpl(override val executor: Executor) : ExecutorCoroutineDispatcherBase()
 
 /**
  * @suppress **This is unstable API and it is subject to change.**
  */
-public abstract class ExecutorCoroutineDispatcherBase : CloseableCoroutineDispatcher(), Delay {
-    /**
-     * @suppress **This is unstable API and it is subject to change.**
-     */
-    internal abstract val executor: Executor
-    
+public abstract class ExecutorCoroutineDispatcherBase : ExecutorCoroutineDispatcher(), Delay {
+
     override fun dispatch(context: CoroutineContext, block: Runnable) =
         try { executor.execute(timeSource.trackTask(block)) }
         catch (e: RejectedExecutionException) {
