@@ -4,6 +4,7 @@
 
 package kotlinx.coroutines.experimental.channels
 
+import kotlinx.atomicfu.*
 import kotlinx.coroutines.experimental.internal.*
 import kotlinx.coroutines.experimental.selects.*
 
@@ -29,8 +30,12 @@ public open class ArrayChannel<E>(
     private val lock = ReentrantLock()
     private val buffer: Array<Any?> = arrayOfNulls<Any?>(capacity)
     private var head: Int = 0
-    @Volatile
-    private var size: Int = 0
+
+    private val _size = atomic(0)
+
+    private var size: Int
+        get() = _size.value
+        set(value) { _size.value = value }
 
     protected final override val isBufferAlwaysEmpty: Boolean get() = false
     protected final override val isBufferEmpty: Boolean get() = size == 0

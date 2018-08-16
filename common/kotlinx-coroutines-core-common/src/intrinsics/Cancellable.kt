@@ -5,6 +5,7 @@
 package kotlinx.coroutines.experimental.intrinsics
 
 import kotlinx.coroutines.experimental.*
+import kotlinx.coroutines.experimental.internal.*
 import kotlin.coroutines.experimental.*
 import kotlin.coroutines.experimental.intrinsics.*
 
@@ -13,11 +14,11 @@ import kotlin.coroutines.experimental.intrinsics.*
  * while waiting to be dispatched.
  */
 public fun <T> (suspend () -> T).startCoroutineCancellable(completion: Continuation<T>) =
-    createCoroutineUnchecked(completion).resumeCancellable(Unit)
+    isolateCoroutine(completion) { createCoroutineUnchecked(it) }.resumeCancellable(Unit)
 
 /**
  * Use this function to start coroutine in a cancellable way, so that it can be cancelled
  * while waiting to be dispatched.
  */
 public fun <R, T> (suspend (R) -> T).startCoroutineCancellable(receiver: R, completion: Continuation<T>) =
-    createCoroutineUnchecked(receiver, completion).resumeCancellable(Unit)
+    isolateCoroutine(completion) { createCoroutineUnchecked(receiver, it) }.resumeCancellable(Unit)

@@ -5,10 +5,8 @@
 package kotlinx.coroutines.experimental
 
 import kotlinx.atomicfu.*
-import kotlinx.cinterop.*
 import kotlinx.coroutines.experimental.internal.*
 import kotlinx.coroutines.experimental.timeunit.*
-import platform.posix.*
 import kotlin.coroutines.experimental.*
 import kotlin.system.*
 
@@ -120,7 +118,7 @@ internal abstract class EventLoopBase: CoroutineDispatcher(), Delay, EventLoop {
             // todo: we should unpark only when this delayed task became first in the queue
             unpark()
         } else
-            DefaultExecutor.execute(task)
+            LocalDispatcher.execute(task)
     }
 
     @Suppress("UNCHECKED_CAST")
@@ -196,7 +194,7 @@ internal abstract class EventLoopBase: CoroutineDispatcher(), Delay, EventLoop {
             // todo: we should unpark only when this delayed task became first in the queue
             unpark()
         } else
-            DefaultExecutor.schedule(delayedTask)
+            LocalDispatcher.schedule(delayedTask)
     }
 
     private fun scheduleImpl(delayedTask: DelayedTask): Boolean {
@@ -256,7 +254,7 @@ internal abstract class EventLoopBase: CoroutineDispatcher(), Delay, EventLoop {
             if (state != DELAYED) return
             if (_delayed.value!!.remove(this)) {
                 state = RESCHEDULED
-                DefaultExecutor.schedule(this)
+                LocalDispatcher.schedule(this)
             } else
                 state = REMOVED
         }
@@ -264,7 +262,7 @@ internal abstract class EventLoopBase: CoroutineDispatcher(), Delay, EventLoop {
         final override fun dispose() {
             when (state) {
                 DELAYED -> _delayed.value?.remove(this)
-                RESCHEDULED -> DefaultExecutor.removeDelayedImpl(this)
+                RESCHEDULED -> LocalDispatcher.removeDelayedImpl(this)
                 else -> return
             }
             state = REMOVED
@@ -303,8 +301,16 @@ private class EventLoopImpl : EventLoopBase() {
 }
 
 internal class BlockingEventLoop : EventLoopBase() {
-    @Volatile
-    public override var isCompleted: Boolean = false
+    val threadId = LocalDispatcher.threadId
+
+    private val _completed = atomic(false)
+
+    public override var isCompleted: Boolean
+        get() = _completed.value
+        set(value) { _completed.value = value }
+
+    override fun toString(): String =
+        "${super.toString()}[threadId=$threadId]"
 }
 
 private fun nanoTime(): Long {

@@ -31,20 +31,23 @@ import kotlin.coroutines.experimental.*
 public fun <T> runBlocking(context: CoroutineContext = EmptyCoroutineContext, block: suspend CoroutineScope.() -> T): T {
     val contextInterceptor = context[ContinuationInterceptor]
     val privateEventLoop = contextInterceptor == null // create private event loop if no dispatcher is specified
+    var oldEventLoop: BlockingEventLoop? = null
     val eventLoop = if (privateEventLoop) {
         //check(currentEventLoop == null) { "Cannot use runBlocking inside runBlocking" }
         val newEventLoop = BlockingEventLoop()
-        currentEventLoop.add(newEventLoop)
+        oldEventLoop = LocalDispatcher.updateCurrentEventLoop(newEventLoop)
         newEventLoop
     } else
         contextInterceptor as? EventLoop
-    val newContext = newCoroutineContext(
-        if (privateEventLoop) context + (eventLoop as ContinuationInterceptor) else context
-    )
-    val coroutine = BlockingCoroutine<T>(newContext, eventLoop, privateEventLoop)
-    coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
-    return coroutine.joinBlocking().also {
-        currentEventLoop.removeAt(currentEventLoop.size - 1)
+    try {
+        val newContext = newCoroutineContext(
+            if (privateEventLoop) context + (eventLoop as ContinuationInterceptor) else context
+        )
+        val coroutine = BlockingCoroutine<T>(newContext, eventLoop, privateEventLoop)
+        coroutine.start(CoroutineStart.DEFAULT, coroutine, block)
+        return coroutine.joinBlocking()
+    } finally {
+        if (privateEventLoop) LocalDispatcher.restoreCurrentEventLoop(oldEventLoop)
     }
 }
 

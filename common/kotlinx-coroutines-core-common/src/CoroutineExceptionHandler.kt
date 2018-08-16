@@ -49,10 +49,16 @@ public fun handleCoroutineException(context: CoroutineContext, exception: Throwa
  */
 @Suppress("FunctionName")
 public inline fun CoroutineExceptionHandler(crossinline handler: (CoroutineContext, Throwable) -> Unit): CoroutineExceptionHandler =
-    object: AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
+    object: AbstractCoroutineExceptionHandler() {
         override fun handleException(context: CoroutineContext, exception: Throwable) =
             handler.invoke(context, exception)
     }
+
+@PublishedApi
+internal abstract class AbstractCoroutineExceptionHandler : AbstractCoroutineContextElement(CoroutineExceptionHandler), CoroutineExceptionHandler {
+    override fun toString(): String =
+        "CoroutineExceptionHandler@$hexAddress[handler=$classSimpleName]"
+}
 
 /**
  * An optional element on the coroutine context to handle uncaught exceptions.

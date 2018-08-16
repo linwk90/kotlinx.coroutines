@@ -4,6 +4,7 @@
 
 package kotlinx.coroutines.experimental.channels
 
+import kotlinx.atomicfu.*
 import kotlinx.coroutines.experimental.internal.*
 import kotlinx.coroutines.experimental.selects.*
 
@@ -42,12 +43,21 @@ class ArrayBroadcastChannel<E>(
 
     // head & tail are Long (64 bits) and we assume that they never wrap around
     // head, tail, and size are guarded by bufferLock
-    @Volatile
-    private var head: Long = 0 // do modulo on use of head
-    @Volatile
-    private var tail: Long = 0 // do modulo on use of tail
-    @Volatile
-    private var size: Int = 0
+    private val _head = atomic(0L) // do modulo on use of head
+    private val _tail = atomic(0L) // do modulo on use of tail
+    private val _size = atomic(0)
+
+    private var head: Long
+        get() = _head.value
+        set(value) { _head.value = value }
+
+    private var tail: Long
+        get() = _tail.value
+        set(value) { _tail.value = value }
+
+    private var size: Int
+        get() = _size.value
+        set(value) { _size.value = value }
 
     private val subscribers = subscriberList<Subscriber<E>>()
 

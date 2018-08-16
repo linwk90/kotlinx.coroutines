@@ -81,7 +81,7 @@ public enum class CoroutineStart {
     public operator fun <T> invoke(block: suspend () -> T, completion: Continuation<T>) =
         when (this) {
             CoroutineStart.DEFAULT -> block.startCoroutineCancellable(completion)
-            CoroutineStart.ATOMIC -> block.startCoroutine(completion)
+            CoroutineStart.ATOMIC -> block.startCoroutineAtomic(completion)
             CoroutineStart.UNDISPATCHED -> block.startCoroutineUndispatched(completion)
             CoroutineStart.LAZY -> Unit // will start lazily
         }
@@ -97,7 +97,7 @@ public enum class CoroutineStart {
     public operator fun <R, T> invoke(block: suspend R.() -> T, receiver: R, completion: Continuation<T>) =
         when (this) {
             CoroutineStart.DEFAULT -> block.startCoroutineCancellable(receiver, completion)
-            CoroutineStart.ATOMIC -> block.startCoroutine(receiver, completion)
+            CoroutineStart.ATOMIC -> block.startCoroutineAtomic(receiver, completion)
             CoroutineStart.UNDISPATCHED -> block.startCoroutineUndispatched(receiver, completion)
             CoroutineStart.LAZY -> Unit // will start lazily
         }

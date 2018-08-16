@@ -17,6 +17,10 @@ internal class DispatchedContinuation<in T>(
     private var _state: Any? = UNDEFINED
     public override var resumeMode: Int = 0
 
+    init {
+        ensureNeverFrozen() // this class contains (potentially) mutable value in its state
+    }
+
     override fun takeState(): Any? {
         val state = _state
         check(state !== UNDEFINED) // fail-fast if repeatedly invoked
@@ -32,7 +36,7 @@ internal class DispatchedContinuation<in T>(
         if (dispatcher.isDispatchNeeded(context)) {
             _state = value
             resumeMode = MODE_ATOMIC_DEFAULT
-            dispatcher.dispatch(context, this)
+            dispatcher.dispatch(context, isolateRunnable(this))
         } else
             resumeUndispatched(value)
     }
@@ -42,29 +46,27 @@ internal class DispatchedContinuation<in T>(
         if (dispatcher.isDispatchNeeded(context)) {
             _state = CompletedExceptionally(exception)
             resumeMode = MODE_ATOMIC_DEFAULT
-            dispatcher.dispatch(context, this)
+            dispatcher.dispatch(context, isolateRunnable(this))
         } else
             resumeUndispatchedWithException(exception)
     }
 
-    @Suppress("NOTHING_TO_INLINE") // we need it inline to save us an entry on the stack
-    inline fun resumeCancellable(value: T) {
+    override fun resumeCancellable(value: T) {
         val context = continuation.context
         if (dispatcher.isDispatchNeeded(context)) {
             _state = value
             resumeMode = MODE_CANCELLABLE
-            dispatcher.dispatch(context, this)
+            dispatcher.dispatch(context, isolateRunnable(this))
         } else
             resumeUndispatched(value)
     }
 
-    @Suppress("NOTHING_TO_INLINE") // we need it inline to save us an entry on the stack
-    inline fun resumeCancellableWithException(exception: Throwable) {
+    override fun resumeCancellableWithException(exception: Throwable) {
         val context = continuation.context
         if (dispatcher.isDispatchNeeded(context)) {
             _state = CompletedExceptionally(exception)
             resumeMode = MODE_CANCELLABLE
-            dispatcher.dispatch(context, this)
+            dispatcher.dispatch(context, isolateRunnable(this))
         } else
             resumeUndispatchedWithException(exception)
     }
@@ -88,29 +90,33 @@ internal class DispatchedContinuation<in T>(
         val context = continuation.context
         _state = value
         resumeMode = MODE_CANCELLABLE
-        dispatcher.dispatchYield(context, this)
+        dispatcher.dispatchYield(context, isolateRunnable(this))
     }
 
     override fun toString(): String =
         "DispatchedContinuation[$dispatcher, ${continuation.toDebugString()}]"
 }
 
-internal fun <T> Continuation<T>.resumeCancellable(value: T) = when (this) {
-    is DispatchedContinuation -> resumeCancellable(value)
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun <T> Continuation<T>.resumeCancellable(value: T) = when (this) {
+    is RunnableContinuation -> resumeCancellable(value)
     else -> resume(value)
 }
 
-internal fun <T> Continuation<T>.resumeCancellableWithException(exception: Throwable) = when (this) {
-    is DispatchedContinuation -> resumeCancellableWithException(exception)
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun <T> Continuation<T>.resumeCancellableWithException(exception: Throwable) = when (this) {
+    is RunnableContinuation -> resumeCancellableWithException(exception)
     else -> resumeWithException(exception)
 }
 
-internal fun <T> Continuation<T>.resumeDirect(value: T) = when (this) {
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun <T> Continuation<T>.resumeDirect(value: T) = when (this) {
     is DispatchedContinuation -> continuation.resume(value)
     else -> resume(value)
 }
 
-internal fun <T> Continuation<T>.resumeDirectWithException(exception: Throwable) = when (this) {
+@Suppress("NOTHING_TO_INLINE")
+internal inline fun <T> Continuation<T>.resumeDirectWithException(exception: Throwable) = when (this) {
     is DispatchedContinuation -> continuation.resumeWithException(exception)
     else -> resumeWithException(exception)
 }
@@ -118,7 +124,15 @@ internal fun <T> Continuation<T>.resumeDirectWithException(exception: Throwable)
 /**
  * @suppress **This is unstable API and it is subject to change.**
  */
-public interface DispatchedTask<in T> : Runnable {
+public interface RunnableContinuation<in T> : Runnable, Continuation<T> {
+    public fun resumeCancellable(value: T)
+    public fun resumeCancellableWithException(exception: Throwable)
+}
+
+/**
+ * @suppress **This is unstable API and it is subject to change.**
+ */
+public interface DispatchedTask<in T> : RunnableContinuation<T> {
     public val delegate: Continuation<T>
     public val resumeMode: Int get() = MODE_CANCELLABLE
 

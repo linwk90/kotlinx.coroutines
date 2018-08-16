@@ -4,13 +4,29 @@
 
 package kotlinx.coroutines.experimental
 
+import kotlinx.atomicfu.*
+
 public actual open class TestBase actual constructor() {
     public actual val isStressTest: Boolean = false
     public actual val stressTestMultiplier: Int = 1
 
-    private var actionIndex = 0
-    private var finished = false
-    private var error: Throwable? = null
+    private val _actionIndex = atomic(0)
+
+    private var actionIndex: Int
+        get() = _actionIndex.value
+        set(value) { _actionIndex.value = value }
+
+    private val _finished = atomic(false)
+
+    private var finished: Boolean
+        get() = _finished.value
+        set(value) { _finished.value = value }
+
+    private val _error = atomic<Throwable?>(null)
+
+    private var error: Throwable?
+        get() = _error.value
+        set(value) { _error.value = value }
 
     /**
      * Throws [IllegalStateException] like `error` in stdlib, but also ensures that the test will not

@@ -69,8 +69,11 @@ internal abstract class AbstractContinuation<in T>(
      */
     private val _state = atomic<Any?>(ACTIVE)
 
-    @Volatile
-    private var parentHandle: DisposableHandle? = null
+    private val _parentHandle = atomic<DisposableHandle?>(null)
+
+    private var parentHandle: DisposableHandle?
+        get() = _parentHandle.value
+        set(value) { _parentHandle.value = value }
 
     internal val state: Any? get() = _state.value
 
@@ -144,6 +147,12 @@ internal abstract class AbstractContinuation<in T>(
 
     override fun resumeWithException(exception: Throwable) =
         resumeImpl(CompletedExceptionally(exception), resumeMode)
+
+    override fun resumeCancellable(value: T) =
+        resumeImpl(value, MODE_CANCELLABLE)
+
+    override fun resumeCancellableWithException(exception: Throwable) =
+        resumeImpl(CompletedExceptionally(exception), MODE_CANCELLABLE)
 
     public fun invokeOnCancellation(handler: CompletionHandler) {
         var handleCache: CancelHandler? = null

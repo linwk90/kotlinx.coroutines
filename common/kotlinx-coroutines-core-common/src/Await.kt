@@ -93,9 +93,12 @@ private class AwaitAll<T>(private val deferreds: Array<out Deferred<T>>) {
     private inner class AwaitAllNode(private val continuation: CancellableContinuation<List<T>>, job: Job) : JobNode<Job>(job) {
         lateinit var handle: DisposableHandle
 
-        @Volatile
-        var disposer: DisposeHandlersOnCancel? = null
-        
+        private val _disposer = atomic<DisposeHandlersOnCancel?>(null)
+
+        var disposer: DisposeHandlersOnCancel?
+            get() = _disposer.value
+            set(value) { _disposer.value = value }
+
         override fun invoke(cause: Throwable?) {
             if (cause != null) {
                 val token = continuation.tryResumeWithException(cause)

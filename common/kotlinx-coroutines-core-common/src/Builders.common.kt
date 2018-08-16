@@ -183,6 +183,5 @@ private class RunCompletion<in T>(
     delegate: Continuation<T>,
     resumeMode: Int
 ) : AbstractContinuation<T>(delegate, resumeMode) {
-
     override val useCancellingState: Boolean get() = true
 }

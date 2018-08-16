@@ -10,7 +10,7 @@ package kotlinx.coroutines.experimental
 public actual class CompletionHandlerException public actual constructor(
     message: String,
     public override val cause: Throwable
-) : RuntimeException(message.withCause(cause))
+) : RuntimeException(message, cause)
 
 /**
  * Thrown by cancellable suspending functions if the [Job] of the coroutine is cancelled while it is suspending.
@@ -38,11 +38,12 @@ public actual class JobCancellationException public actual constructor(
         (message!!.hashCode() * 31 + job.hashCode()) * 31 + (cause?.hashCode() ?: 0)
 }
 
-internal actual class DispatchException actual constructor(message: String, cause: Throwable) : RuntimeException(message.withCause(cause))
+internal actual class DispatchException actual constructor(message: String, cause: Throwable) :
+    RuntimeException(message, cause)
 
 @Suppress("FunctionName")
 internal fun IllegalStateException(message: String, cause: Throwable?) =
-    IllegalStateException(message.withCause(cause))
+    kotlin.IllegalStateException(message, cause)
 
 private fun String.withCause(cause: Throwable?) =
     if (cause == null) this else "$this; caused by $cause"

@@ -6,9 +6,10 @@ package kotlinx.coroutines.experimental
 
 private var counter = 0
 
+@SymbolName("Kotlin_Any_hashCode")
+private external fun Any.identityHashCode(): Int
+
 internal actual val Any.hexAddress: String
-    get() {
-        return "<not_implemented>" // :todo:
-    }
+    get() = identityHashCode().toString(16)
 
 internal actual val Any.classSimpleName: String get() = this::class.simpleName ?: "Unknown"
