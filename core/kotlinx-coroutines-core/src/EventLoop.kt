@@ -59,6 +59,14 @@ public fun EventLoop(thread: Thread = Thread.currentThread(), parentJob: Job? = 
         if (parentJob != null) initParentJob(parentJob)
     }
 
+/**
+ * @suppress **Deprecated**: Preserves binary compatibility with old code
+ */
+@JvmName("EventLoop")
+@Deprecated(level = DeprecationLevel.HIDDEN, message = "Preserves binary compatibility with old code")
+public fun EventLoop_Deprecated(thread: Thread = Thread.currentThread(), parentJob: Job? = null): CoroutineDispatcher =
+    EventLoop(thread, parentJob) as CoroutineDispatcher
+
 private const val DELAYED = 0
 private const val REMOVED = 1
 private const val RESCHEDULED = 2
